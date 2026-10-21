@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LearnHub — 個人上課教材與知識庫中心</title>
+  <meta name="description" content="LearnHub 個人上課教材網站，依分類整理所有 HTML 互動講義與課程教材。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- 頂部導覽列 -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand" id="brand-home" title="回到全部教材總覽">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">LearnHub</span>
+          <span class="brand-subtitle">個人上課教材與知識庫中心</span>
+        </div>
+      </div>
+
+      <!-- 關鍵字即時搜尋 -->
+      <div class="search-container">
+        <span class="search-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input
+          type="search"
+          id="search-input"
+          class="search-input"
+          placeholder="搜尋教材標題、主題關鍵字、分類或標籤..."
+          autocomplete="off"
+        />
+        <kbd class="search-shortcut" id="search-shortcut">/</kbd>
+        <button type="button" class="search-clear-btn" id="search-clear-btn" title="清除搜尋">
+          &times;
+        </button>
+      </div>
+
+      <!-- 右側工具按鈕 -->
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="how-to-add-btn" title="查看如何新增 HTML 教材">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+          <span class="btn-text-hide-mobile">新增教材指南</span>
+        </button>
+
+        <button type="button" class="icon-btn theme-toggle-btn" id="theme-toggle-btn" aria-label="切換深淺色主題"></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要版面：左側分類導覽 + 右側教材卡片 -->
+  <main class="main-layout">
+    <!-- 左側分類導覽與標籤 -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-heading">
+          <span>課程分類目錄</span>
+        </div>
+        <nav class="category-nav" id="category-nav" aria-label="教材分類"></nav>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-heading">
+          <span>主題標籤篩選</span>
+        </div>
+        <div class="tag-cloud" id="tag-cloud"></div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          快速管理提示
+        </div>
+        <p>所有教材皆為獨立 HTML 檔案，存放於 <code>materials/</code> 目錄，並由 <code>js/materials-data.js</code> 統一管理分類與清單。</p>
+      </div>
+    </aside>
+
+    <!-- 右側主內容區 -->
+    <section class="content-area">
+      <!-- 分類介紹橫幅 -->
+      <div class="category-banner">
+        <div class="banner-info">
+          <span class="banner-badge" id="banner-badge">ALL COURSES</span>
+          <h1 class="banner-title" id="banner-title">所有上課教材總覽</h1>
+          <p class="banner-desc" id="banner-desc">
+            點擊任一教材卡片即可在站內閱讀器直接開啟 HTML 講義，或切換全螢幕進行課堂投影教學。
+          </p>
+        </div>
+        <div class="banner-stats">
+          <div class="stat-box">
+            <div class="stat-value" id="stat-total-categories">0</div>
+            <div class="stat-label">課程分類</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-total-materials">0</div>
+            <div class="stat-label">HTML 教材</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工具控制列 -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="result-summary" id="result-summary">共顯示 <strong>0</strong> 份教材</span>
+          <div id="active-filters"></div>
+        </div>
+
+        <div class="toolbar-right">
+          <select id="sort-select" class="sort-select" aria-label="排序方式">
+            <option value="date-desc">最新發布優先</option>
+            <option value="date-asc">最早發布優先</option>
+            <option value="title-asc">依標題名稱排序</option>
+          </select>
+
+          <div class="view-mode-group" role="group" aria-label="檢視模式">
+            <button type="button" class="view-mode-btn active" id="view-grid-btn" title="卡片網格檢視">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+            </button>
+            <button type="button" class="view-mode-btn" id="view-list-btn" title="條列清單檢視">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 教材卡片容器 -->
+      <div id="materials-container" class="materials-grid"></div>
+    </section>
+  </main>
+
+  <!-- 站內內嵌 HTML 教材閱讀器 Modal -->
+  <div class="viewer-overlay" id="viewer-overlay" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
+    <div class="viewer-container">
+      <div class="viewer-header">
+        <div class="viewer-header-left">
+          <button type="button" class="viewer-back-btn" id="viewer-back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            返回目錄
+          </button>
+          <div class="viewer-title-group">
+            <span class="viewer-category-tag" id="viewer-category-tag">分類</span>
+            <h2 class="viewer-title" id="viewer-title">教材標題</h2>
+          </div>
+        </div>
+
+        <div class="viewer-header-actions">
+          <button type="button" class="viewer-action-btn" id="viewer-fullscreen-btn" title="切換全螢幕授課模式">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+            <span class="btn-text-hide-mobile">全螢幕投影</span>
+          </button>
+
+          <a href="#" target="_blank" rel="noopener" class="viewer-action-btn" id="viewer-newtab-btn" title="在新分頁開啟原始 HTML 檔案">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            <span class="btn-text-hide-mobile">新分頁開啟</span>
+          </a>
+
+          <button type="button" class="viewer-action-btn close-btn" id="viewer-close-btn" title="關閉閱讀器 (Esc)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="viewer-body">
+        <iframe id="viewer-iframe" class="viewer-iframe" src="about:blank" title="HTML 教材內容閱讀器"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 如何新增教材指南 Modal -->
+  <div class="viewer-overlay" id="help-overlay" role="dialog" aria-modal="true">
+    <div class="viewer-container help-modal-content">
+      <div class="viewer-header">
+        <div class="viewer-title-group">
+          <span class="viewer-category-tag">GUIDE</span>
+          <h2 class="viewer-title">如何在 LearnHub 新增您的 HTML 上課教材？</h2>
+        </div>
+        <button type="button" class="viewer-action-btn close-btn" id="help-close-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="help-body">
+        <div class="help-step">
+          <h4>步驟 1：放入您的 HTML 教材檔案</h4>
+          <p>將製作好的 <code>.html</code> 教材放入 <code>materials/分類資料夾/</code> 下（也可直接複製 <code>materials/template.html</code> 標準模板來編寫新講義）。</p>
+        </div>
+        <div class="help-step">
+          <h4>步驟 2：在設定檔登記教材資訊</h4>
+          <p>打開 <code>js/materials-data.js</code>，在 <code>materials</code> 陣列加入一筆資料即可自動出現在網站上：</p>
+          <pre class="help-code">{
+  id: "my-new-lesson",
+  title: "Ch.03 響應式網頁 Grid 網格系統實戰",
+  category: "web-dev",
+  description: "深入淺出介紹 CSS Grid 二維排版技巧與實務案例。",
+  path: "materials/web-dev/grid-layout.html",
+  date: "2026-10-21",
+  duration: "50 分鐘",
+  level: "進階",
+  tags: ["CSS3", "Grid", "RWD"]
+}</pre>
+        </div>
+        <div class="help-step">
+          <h4>步驟 3：推送至 GitHub 自動部署 Cloudflare</h4>
+          <p>執行 <code>git add . && git commit -m "新增教材" && git push</code>，Cloudflare 即會自動同步更新線上教材網站。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 頁尾 -->
+  <footer class="site-footer">
+    <p>LearnHub 個人上課教材網站 · 透過 GitHub &amp; Cloudflare 自動化部署</p>
+  </footer>
+
+  <script src="js/materials-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

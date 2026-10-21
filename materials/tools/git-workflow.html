@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab 01 Git 版本控制核心概念與分支協作流程 — LearnHub 教材</title>
+  <link rel="stylesheet" href="../../css/courseware.css" />
+</head>
+<body>
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-badge">開發工具與實務</span>
+      <span class="lesson-info">難度：實戰 · 預計授課：40 分鐘</span>
+    </div>
+    <h1 class="lesson-title">Lab 01 Git 版本控制核心概念與分支協作流程</h1>
+    <p class="lesson-subtitle">掌握 Working Directory、Staging Area 與 Repository 的檔案生命周期，建立乾淨可回溯的版本紀錄。</p>
+  </header>
+
+  <div class="objectives-box">
+    <h3>本節課學習目標</h3>
+    <ul>
+      <li>認識 Git 三大工作區域與檔案狀態轉換</li>
+      <li>熟悉日常開發指令：<code>add</code>、<code>commit</code>、<code>switch</code>、<code>merge</code>、<code>push</code></li>
+      <li>串聯 GitHub 與 Cloudflare Pages 自動化部署流程</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2><span class="sec-num">1</span> 常用 Git 指令速查表</h2>
+    <pre><code># 1. 初始化專案並綁定帳號信箱
+git init
+git config user.email "lee.shunyi@gmail.com"
+
+# 2. 將修改加入暫存區並建立版本提交
+git add .
+git commit -m "feat: 新增課程 HTML 教材"
+
+# 3. 推送至 GitHub 遠端儲存庫（自動觸發 Cloudflare 部署）
+git push -u origin main</code></pre>
+  </section>
+</body>
+</html>

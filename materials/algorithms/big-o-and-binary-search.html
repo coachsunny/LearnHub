@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lec 01 時間複雜度 Big-O 與二分搜尋法實戰 — LearnHub 教材</title>
+  <link rel="stylesheet" href="../../css/courseware.css" />
+</head>
+<body>
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-badge">資料結構與演算法</span>
+      <span class="lesson-info">難度：進階 · 預計授課：55 分鐘</span>
+    </div>
+    <h1 class="lesson-title">Lec 01 時間複雜度 Big-O 與二分搜尋法實戰</h1>
+    <p class="lesson-subtitle">當資料量從 100 筆成長到 1,000 萬筆時，如何透過對數時間複雜度 O(log n) 瞬間完成搜尋？</p>
+  </header>
+
+  <div class="objectives-box">
+    <h3>本節課學習目標</h3>
+    <ul>
+      <li>理解漸進時間複雜度 $O(1)$、$O(\log n)$、$O(n)$ 與 $O(n^2)$ 的成長趨勢差異</li>
+      <li>掌握二分搜尋法 (Binary Search) 的前提條件與閉區間 <code>[left, right]</code> 寫法</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2><span class="sec-num">1</span> 二分搜尋法標準實作 (Python)</h2>
+    <p>對於<strong>已排序</strong>的陣列，每次比較中間元素即可排除一半的搜尋範圍：</p>
+    <pre><code>def binary_search(nums: list[int], target: int) -> int:
+    left, right = 0, len(nums) - 1
+
+    while left <= right:
+        mid = left + (right - left) // 2
+        if nums[mid] == target:
+            return mid
+        elif nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return -1</code></pre>
+    <div class="callout warning">
+      <div class="callout-title">⚠️ 常見邊界陷阱</div>
+      <p style="margin:0">在強型別語言（如 C++ / Java）中，計算中點建議寫成 <code>left + (right - left) / 2</code>，可避免 <code>left + right</code> 超過整數上限而發生溢位 (Overflow)。</p>
+    </div>
+  </section>
+</body>
+</html>

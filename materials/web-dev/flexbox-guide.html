@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch.01 現代 CSS Flexbox 彈性盒子完全指南 — LearnHub 教材</title>
+  <link rel="stylesheet" href="../../css/courseware.css" />
+  <style>
+    .flex-playground {
+      display: flex;
+      gap: 12px;
+      min-height: 150px;
+      padding: 16px;
+      border-radius: 10px;
+      background: rgba(37, 99, 235, 0.06);
+      border: 2px dashed var(--cw-accent);
+      transition: all 0.25s ease;
+    }
+    .flex-item {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-badge">網頁前端開發</span>
+      <span class="lesson-info">難度：入門 · 預計授課：50 分鐘</span>
+    </div>
+    <h1 class="lesson-title">Ch.01 現代 CSS Flexbox 彈性盒子完全指南</h1>
+    <p class="lesson-subtitle">掌握主軸 (Main Axis) 與交錯軸 (Cross Axis) 的空間分配邏輯，輕鬆完成各式響應式元件排版。</p>
+  </header>
+
+  <div class="objectives-box">
+    <h3>本節課學習目標</h3>
+    <ul>
+      <li>理解 Flex Container（外容器）與 Flex Items（內元件）的關係</li>
+      <li>熟練操作 <code>justify-content</code> 與 <code>align-items</code> 進行水平與垂直對齊</li>
+      <li>認識 <code>flex-grow</code>、<code>flex-shrink</code> 與 <code>flex-basis</code> 彈性縮放機制</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2><span class="sec-num">1</span> 什麼是 Flexbox 模型？</h2>
+    <p>當我們在父元素設定 <code>display: flex;</code> 時，該元素會成為 <strong>Flex 外容器 (Container)</strong>，而其直接子元素則自動成為 <strong>Flex 內元件 (Items)</strong>。預設情況下，子元素會沿著水平主軸由左至右排列。</p>
+    <pre><code>.nav-container {
+  display: flex;
+  justify-content: space-between; /* 主軸分散對齊 */
+  align-items: center;            /* 交錯軸置中對齊 */
+  gap: 16px;                      /* 元件間距 */
+}</code></pre>
+  </section>
+
+  <section>
+    <h2><span class="sec-num">2</span> 課堂互動實測：即時切換對齊屬性</h2>
+    <p>點擊下方按鈕，觀察外容器設定不同 <code>justify-content</code> 與 <code>align-items</code> 時的排列變化：</p>
+
+    <div class="demo-box">
+      <div class="demo-controls" id="jc-controls">
+        <button class="demo-btn active" data-prop="justifyContent" data-val="flex-start">justify: flex-start</button>
+        <button class="demo-btn" data-prop="justifyContent" data-val="center">justify: center</button>
+        <button class="demo-btn" data-prop="justifyContent" data-val="space-between">justify: space-between</button>
+        <button class="demo-btn" data-prop="justifyContent" data-val="space-evenly">justify: space-evenly</button>
+      </div>
+      <div class="demo-controls" id="ai-controls">
+        <button class="demo-btn active" data-prop="alignItems" data-val="stretch">align: stretch</button>
+        <button class="demo-btn" data-prop="alignItems" data-val="center">align: center</button>
+        <button class="demo-btn" data-prop="alignItems" data-val="flex-end">align: flex-end</button>
+      </div>
+
+      <div class="flex-playground" id="flex-box">
+        <div class="flex-item">1</div>
+        <div class="flex-item">2</div>
+        <div class="flex-item">3</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 課堂實務技巧</div>
+      <p style="margin:0">過去在 CSS 要達成「水平垂直完全置中」非常繁瑣，現在只需在外容器加上 <code>display: flex; justify-content: center; align-items: center;</code> 三行即可完成！</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="sec-num">3</span> 隨堂問答檢核</h2>
+    <details class="quiz-item">
+      <summary>Q1：如果把 flex-direction 改為 column，主軸 (Main Axis) 的方向會變成什麼？</summary>
+      <div class="quiz-answer">
+        <p>當設定為 <code>flex-direction: column</code> 時，<strong>主軸會改為由上到下的垂直方向</strong>，此時 <code>justify-content</code> 控制的是垂直分佈，而 <code>align-items</code> 則改為控制水平對齊。</p>
+      </div>
+    </details>
+  </section>
+
+  <script>
+    const box = document.getElementById('flex-box');
+    document.querySelectorAll('.demo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prop = btn.getAttribute('data-prop');
+        const val = btn.getAttribute('data-val');
+        box.style[prop] = val;
+        btn.parentElement.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
