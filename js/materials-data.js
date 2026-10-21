@@ -31,6 +31,13 @@ window.LEARNHUB_DATA = {
 
   categories: [
     {
+      id: "ai-workshop",
+      name: "AI 互動實戰工作坊",
+      icon: "sparkles",
+      color: "#0ea5e9",
+      description: "零基礎 AI Agent 指揮官實戰課程，運用黃金提示詞打造專屬互動小程式與益智遊戲"
+    },
+    {
       id: "web-dev",
       name: "網頁前端開發",
       icon: "code",
@@ -61,6 +68,17 @@ window.LEARNHUB_DATA = {
   ],
 
   materials: [
+    {
+      id: "ai-memory-game-slides",
+      title: "AI Agent 指揮官：打造專屬『腦力翻牌』益智遊戲（2 小時實戰工作坊簡報）",
+      category: "ai-workshop",
+      description: "零基礎帶領學員化身 AI 指揮官，透過黃金 Prompt 提示詞一鍵複製、自訂主題材料包與微調指令，親手完成專屬腦力翻牌記憶遊戲。",
+      path: "materials/ai-workshop/index.html",
+      date: "2026-10-21",
+      duration: "120 分鐘",
+      level: "實戰",
+      tags: ["AI互動小程式", "Prompt工程", "腦力翻牌遊戲", "互動簡報", "熟齡友善"]
+    },
     {
       id: "html-css-flexbox",
       title: "Ch.01 現代 CSS Flexbox 彈性盒子完全指南",

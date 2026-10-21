@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent 指揮官：打造專屬『腦力翻牌』益智遊戲 —— 2 小時實戰工作坊簡報</title>
+  <style>
+    /* ==========================================================================
+       1. 全域變數與重設 (CSS Variables & Reset)
+       ========================================================================== */
+    :root {
+      --bg-dark: #09121d;
+      --bg-card: #132235;
+      --bg-card-hover: #1b2f48;
+      --primary: #0284c7;
+      --primary-light: #38bdf8;
+      --accent-teal: #0d9488;
+      --accent-teal-light: #2dd4bf;
+      --accent-amber: #f59e0b;
+      --accent-orange: #f97316;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border-card: rgba(255, 255, 255, 0.1);
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --success: #10b981;
+      --shadow-lg: 0 16px 36px -4px rgba(0, 0, 0, 0.5), 0 8px 16px -4px rgba(0, 0, 0, 0.3);
+      --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(2, 132, 199, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.15) 0%, transparent 40%);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* ==========================================================================
+       2. 頂部進度條與導覽列 (Header & Progress)
+       ========================================================================== */
+    .top-bar {
+      height: 58px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .progress-track {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 4%;
+      background: linear-gradient(90deg, var(--primary), var(--accent-teal-light), var(--accent-amber));
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .badge-stage {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.25), rgba(13, 148, 136, 0.25));
+      border: 1px solid var(--accent-teal-light);
+      color: var(--accent-teal-light);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .top-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+      max-width: 500px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--primary-light);
+      color: #fff;
+    }
+
+    /* ==========================================================================
+       3. 投影片核心主容器 (Slide Container & Stage)
+       ========================================================================== */
+    .slide-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 32px 16px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide-stage {
+      width: 100%;
+      max-width: 1400px;
+      height: 100%;
+      max-height: 820px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 44px 56px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(30px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      overflow-y: auto;
+      user-select: text;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    /* 捲軸美化 */
+    .slide::-webkit-scrollbar {
+      width: 6px;
+    }
+    .slide::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    /* 標題與版面元素 */
+    .slide-header {
+      margin-bottom: 24px;
+      flex-shrink: 0;
+    }
+
+    .slide-tag {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent-amber);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+
+    .slide-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slide-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      font-size: 1.25rem;
+      line-height: 1.65;
+    }
+
+    /* ==========================================================================
+       4. 卡片、網格與內容樣式 (Cards, Grid, Callouts)
+       ========================================================================== */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 24px 28px;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title .icon {
+      font-size: 1.6rem;
+    }
+
+    .card-desc {
+      font-size: 1.12rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* 醒目引導框 (Highlight Box) */
+    .callout {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(13, 148, 136, 0.12));
+      border-left: 5px solid var(--accent-teal-light);
+      border-radius: 0 14px 14px 0;
+      padding: 18px 24px;
+      font-size: 1.2rem;
+      color: var(--text-main);
+    }
+
+    .callout-amber {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(249, 115, 22, 0.12));
+      border-left: 5px solid var(--accent-amber);
+    }
+
+    /* 步驟清單 */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-card);
+      padding: 16px 20px;
+      border-radius: 12px;
+    }
+
+    .step-num {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--primary), var(--accent-teal));
+      color: white;
+      font-weight: 800;
+      font-size: 1.15rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.4);
+    }
+
+    .step-content h4 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      font-size: 1.08rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ==========================================================================
+       5. 提示詞專屬卡片與快速複製系統 (Prompt Card & Copy Engine)
+       ========================================================================== */
+    .prompt-box {
+      background: #08111e;
+      border: 2px solid var(--primary);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 6px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .prompt-header {
+      background: linear-gradient(90deg, rgba(2, 132, 199, 0.3), rgba(13, 148, 136, 0.2));
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .prompt-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-light);
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .btn-copy {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-copy:hover {
+      background: var(--primary-light);
+      transform: scale(1.03);
+    }
+
+    .btn-copy.copied {
+      background: var(--success) !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .prompt-content {
+      padding: 20px 24px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 1.18rem;
+      line-height: 1.7;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      user-select: all;
+    }
+
+    .tag-highlight {
+      background: rgba(245, 158, 11, 0.25);
+      color: #fef08a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      border: 1px dashed var(--accent-amber);
+    }
+
+    /* 複製成功提示 (Toast Notification) */
+    .toast-copy {
+      position: fixed;
+      bottom: 85px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: #0f172a;
+      border: 2px solid var(--success);
+      color: #ffffff;
+      padding: 12px 28px;
+      border-radius: 999px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast-copy.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ==========================================================================
+       6. 內嵌翻牌小遊戲微演示 (Live Mini Card Game Widget)
+       ========================================================================== */
+    .mini-game-container {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .mini-game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 440px;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .mini-game-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 86px);
+      gap: 14px;
+      perspective: 1000px;
+    }
+
+    .mini-card {
+      width: 86px;
+      height: 98px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .mini-card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .mini-card-face {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      user-select: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .mini-card-back {
+      background: linear-gradient(135deg, #0284c7, #0d9488);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1.6rem;
+      font-weight: 800;
+    }
+
+    .mini-card-front {
+      background: #ffffff;
+      border: 2px solid var(--accent-amber);
+      transform: rotateY(180deg);
+    }
+
+    .mini-card.matched .mini-card-front {
+      background: #dcfce7;
+      border-color: var(--success);
+    }
+
+    /* ==========================================================================
+       7. 底部控制列與操作提示 (Bottom Control Bar)
+       ========================================================================== */
+    .bottom-bar {
+      height: 68px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .nav-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn-nav {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.8), rgba(13, 148, 136, 0.8));
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-nav:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--primary-light), var(--accent-teal-light));
+      color: #0f172a;
+      transform: translateY(-2px);
+    }
+
+    .btn-nav:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+      filter: grayscale(1);
+    }
+
+    .slide-counter {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 6px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--border-card);
+    }
+
+    .counter-curr {
+      color: var(--accent-teal-light);
+    }
+
+    .counter-total {
+      color: var(--text-dim);
+    }
+
+    .keyboard-hint {
+      color: var(--text-dim);
+      font-size: 0.92rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .kbd-key {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* ==========================================================================
+       8. 目錄抽屜 (TOC / Overview Drawer)
+       ========================================================================== */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .toc-drawer {
+      width: 440px;
+      max-width: 90vw;
+      height: 100%;
+      background: #0d1726;
+      border-left: 1px solid var(--border-card);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .drawer-overlay.open .toc-drawer {
+      transform: translateX(0);
+    }
+
+    .toc-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toc-header h3 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .toc-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toc-item {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.98rem;
+      transition: all 0.2s ease;
+    }
+
+    .toc-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: var(--border-accent);
+    }
+
+    .toc-item.active {
+      background: rgba(2, 132, 199, 0.2);
+      border-color: var(--primary-light);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .toc-item-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .toc-stage-divider {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--accent-amber);
+      margin: 14px 0 4px 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* 響應式微調 */
+    @media (max-width: 1024px) {
+      .slide {
+        padding: 30px 32px;
+      }
+      .slide-title {
+        font-size: 1.85rem;
+      }
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部導覽與進度條 -->
+  <header class="top-bar">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="top-left">
+      <span class="badge-stage" id="stageBadge">課程導聆</span>
+      <span class="top-title" id="headerTitle">AI Agent 指揮官：打造專屬『腦力翻牌』益智遊戲</span>
+    </div>
+    <div class="top-right">
+      <button class="btn-icon" id="btnToc" title="開啟目錄 (M)">
+        <span>📑</span> 目錄
+      </button>
+      <button class="btn-icon" id="btnFullscreen" title="全螢幕切換 (F)">
+        <span>⛶</span> 全螢幕
+      </button>
+    </div>
+  </header>
+
+  <!-- 投影片核心主畫布 -->
+  <main class="slide-viewport">
+    <div class="slide-stage">
+
+      <!-- ==========================================
+           SLIDE 01: 主封面
+           ========================================== -->
+      <section class="slide active" data-stage="課程導聆" data-title="工作坊主封面">
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; gap: 20px;">
+          <div style="display: inline-flex; gap: 10px;">
+            <span class="badge-stage" style="font-size: 1rem; padding: 6px 16px;">⏱️ 2 小時實戰工作坊</span>
+            <span class="badge-stage" style="font-size: 1rem; padding: 6px 16px; border-color: var(--accent-amber); color: var(--accent-amber);">✨ 全民零門檻・跨世代共創</span>
+          </div>
+
+          <h1 style="font-size: 3.2rem; font-weight: 900; line-height: 1.2; background: linear-gradient(135deg, #ffffff, #38bdf8, #2dd4bf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; max-width: 1000px;">
+            AI Agent 指揮官：<br>打造專屬『腦力翻牌』益智遊戲
+          </h1>
+
+          <p style="font-size: 1.5rem; color: #cbd5e1; max-width: 820px; line-height: 1.5;">
+            不用懂寫程式，把創意與生活記憶交給 AI Agent！<br>
+            從靜態個人網頁邁向<strong style="color: var(--accent-amber);">「動態互動小程式」</strong>的全新里程碑
+          </p>
+
+          <div style="display: flex; gap: 24px; margin-top: 15px; align-items: center;">
+            <div style="background: rgba(255,255,255,0.06); padding: 12px 24px; border-radius: 12px; border: 1px solid var(--border-card); text-align: left;">
+              <div style="font-size: 0.9rem; color: var(--text-dim);">主講講師</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">Sunny Lee</div>
+              <div style="font-size: 0.88rem; color: var(--accent-teal-light);">專業教練與教育工作者 ｜ AI智能流程實務認證</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); padding: 12px 24px; border-radius: 12px; border: 1px solid var(--border-card); text-align: left;">
+              <div style="font-size: 0.9rem; color: var(--text-dim);">核心工具</div>
+              <div style="font-size: 1.2rem; font-weight: 700; color: #fff;">Antigravity × GitHub Pages</div>
+              <div style="font-size: 0.88rem; color: var(--accent-amber);">手機即玩 ｜ LINE 一鍵轉發</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 02: 今天您將帶走什麼？
+           ========================================== -->
+      <section class="slide" data-stage="課程導聆" data-title="今天您將帶走什麼？">
+        <div class="slide-header">
+          <span class="slide-tag">LEARNING OUTCOMES</span>
+          <h2 class="slide-title">🎯 今天下課時，您將帶走什麼？</h2>
+          <p class="slide-subtitle">只要 120 分鐘，從零到完成屬於您的個人作品，收穫滿滿的數位成就感！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3" style="margin-top: 10px;">
+            <div class="card" style="border-top: 4px solid var(--primary);">
+              <div class="card-title"><span class="icon">🗣️</span> 學會指揮 AI</div>
+              <p class="card-desc">不用硬背艱深的英文程式碼！用日常口語、填空式指令，指揮 Antigravity Agent 自動撰寫並修復遊戲邏輯。</p>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--accent-teal-light);">
+              <div class="card-title"><span class="icon">🌸</span> 專屬主題遊戲</div>
+              <p class="card-desc">自由挑選喜愛的風格——台灣四季水果、放鬆綠意花卉、或是旅行回憶，大字大按鈕舒適設計，手機點擊超流暢！</p>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--accent-amber);">
+              <div class="card-title"><span class="icon">📱</span> 專屬網址・免安裝即玩</div>
+              <p class="card-desc">一鍵生成個人專屬網址，傳到 LINE 或社群，親友點開「免安裝、立刻玩」，隨時跨世代互玩比拚！</p>
+            </div>
+          </div>
+          <div class="callout" style="margin-top: 20px;">
+            💡 <strong>新手友善保證：</strong>一步一步引導帶領，確保零基礎也能 100% 同步通關！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 03: 破除心魔：角色的全新定位
+           ========================================== -->
+      <section class="slide" data-stage="課程導聆" data-title="破除心魔：學員是導演">
+        <div class="slide-header">
+          <span class="slide-tag">MINDSET SHIFT</span>
+          <h2 class="slide-title">🧠 角色大翻轉：您是導演，AI 是全能工程師</h2>
+          <p class="slide-subtitle">打破對科技與程式的刻板印象，現代 AI 讓我們專注在「創意與品味」</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.25);">
+              <div class="card-title" style="color: #fca5a5;"><span class="icon">❌</span> 傳統寫程式的痛點</div>
+              <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px; margin-top: 12px; font-size: 1.15rem; color: #fecaca;">
+                <li>• 記憶艱深單字（function, array, loop...）</li>
+                <li>• 漏掉一個分號 <code>;</code> 整個程式就當掉罷工</li>
+                <li>• 查找吃力，在幾百行黑底白字裡找錯誤</li>
+                <li>• 挫折感大，覺得自己「不懂程式代碼就做不出軟體」</li>
+              </ul>
+            </div>
+            <div class="card" style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3);">
+              <div class="card-title" style="color: #6ee7b7;"><span class="icon">✔️</span> 現代人機協作新模式</div>
+              <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px; margin-top: 12px; font-size: 1.15rem; color: #d1fae5;">
+                <li>• <strong>您是產品經理 / 總導演：</strong>負責出想法、訂規則、選美感</li>
+                <li>• <strong>AI 是專屬工程師：</strong>負責敲鍵盤、排版面、處理複雜邏輯</li>
+                <li>• 只要用「看得懂的繁體中文」下達清晰需求</li>
+                <li>• 享受創作的純粹樂趣與即時成就感！</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="text-align: center; font-size: 1.35rem; font-weight: 700;">
+            「不需要懂寫程式，只要懂得如何清晰表達您的想法！」
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 04: 120 分鐘冒險地圖
+           ========================================== -->
+      <section class="slide" data-stage="課程導聆" data-title="120 分鐘冒險地圖">
+        <div class="slide-header">
+          <span class="slide-tag">ROADMAP</span>
+          <h2 class="slide-title">🗺️ 今日 120 分鐘實戰冒險地圖</h2>
+          <p class="slide-subtitle">節奏明確、步步為營，每一階段都有看得見的成果里程碑</p>
+        </div>
+        <div class="slide-body">
+          <div class="steps-list">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>第 00～20m ｜ 第一階段：啟發與橋接</h4>
+                <p>成果先行體驗、連線官網下載啟動 Antigravity、觀念升級（個人網站 vs 動態邏輯）。</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>第 20～55m ｜ 第二階段：人機協作實戰</h4>
+                <p>拆解四大積木、發布「黃金 Prompt 範本」至 Antigravity、產出第一版可運行遊戲。</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>第 55～85m ｜ 第三階段：個人化定制微調</h4>
+                <p>套用三大主題材料包（花卉、水果、環遊世界）、調整大字大按鈕、加入通關慶祝彩花。</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>第 85～105m ｜ 第四階段：發布與手機安裝</h4>
+                <p>提交到 GitHub 倉庫、啟用 GitHub Pages 公開網址、現場掃碼「加入手機主畫面」。</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">5</div>
+              <div class="step-content">
+                <h4>第 105～120m ｜ 第五階段：歡樂互玩與總結</h4>
+                <p>鄰座交換手機試玩比拚、轉發 LINE 家庭群組互動、學員大合照與結業賦能。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 05: 第一階段：成果先行體驗
+           ========================================== -->
+      <section class="slide" data-stage="第一階段：啟發與橋接 (00~20m)" data-title="成果先行：現場試玩遊戲">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 1: INSPIRATION</span>
+          <h2 class="slide-title">🎮 成果先行：看看我們今天要做的小遊戲！</h2>
+          <p class="slide-subtitle">不用等到最後才揭曉！直接在大螢幕上翻動卡片，親身體驗遊戲魅力</p>
+        </div>
+        <div class="slide-body" style="display: flex; flex-direction: row; gap: 32px; align-items: center;">
+          <div style="flex: 1.2;">
+            <div class="mini-game-container">
+              <div class="mini-game-header">
+                <span style="color: var(--accent-amber);">🧠 翻牌互動體驗區 (4對)</span>
+                <span id="miniStepCount" style="color: var(--accent-teal-light);">翻牌次數：0</span>
+                <button class="btn-icon" id="miniResetBtn" style="padding: 4px 10px; font-size: 0.85rem;">🔄 重置</button>
+              </div>
+              <div class="mini-game-grid" id="miniGameGrid">
+                <!-- 迷你遊戲卡片由 JS 動態產生 -->
+              </div>
+              <div id="miniWinMsg" style="font-size: 1rem; color: var(--success); font-weight: 700; height: 24px; visibility: hidden;">
+                🎉 恭喜配對成功！您的記憶力超棒！
+              </div>
+            </div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+            <div class="card">
+              <div class="card-title">👀 請觀察這三個趣味要素：</div>
+              <ul style="padding-left: 20px; color: var(--text-muted); font-size: 1.15rem; line-height: 1.8;">
+                <li><strong>1. 點擊翻轉：</strong>點一下卡片旋轉 180 度露出正面圖示。</li>
+                <li><strong>2. 配對判定：</strong>如果兩張一樣，保持翻開；不一樣則 1 秒後蓋回。</li>
+                <li><strong>3. 勝負回饋：</strong>全部配對成功跳出讚美訊息！</li>
+              </ul>
+            </div>
+            <div class="callout">
+              這就是標準的「動態小程式」！今天您將透過 AI，親手把它做出來。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 06: 第一階段：下載與啟動 Antigravity
+           ========================================== -->
+      <section class="slide" data-stage="第一階段：啟發與橋接 (00~20m)" data-title="下載與啟動 Antigravity">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 1: ENVIRONMENT SETUP</span>
+          <h2 class="slide-title">🛠️ 工欲善其事：下載與啟動 Antigravity 工作台</h2>
+          <p class="slide-subtitle">直接連上官網一鍵下載安裝，讓您的專屬 AI 開發助理就位！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="border-top: 4px solid var(--primary);">
+              <div class="card-title">🌐 官方網站下載安裝步驟</div>
+              <div class="steps-list" style="margin-top: 14px; gap: 12px;">
+                <div class="step-item" style="padding: 12px 16px;">
+                  <div class="step-num" style="width: 32px; height: 32px; font-size: 1rem;">1</div>
+                  <div class="step-content">
+                    <h4 style="font-size: 1.15rem;">連上官網點選下載</h4>
+                    <p style="font-size: 1rem;">開啟瀏覽器進入官網，點擊 <strong>Download for Windows / Mac</strong> 下載安裝檔。</p>
+                  </div>
+                </div>
+                <div class="step-item" style="padding: 12px 16px;">
+                  <div class="step-num" style="width: 32px; height: 32px; font-size: 1rem;">2</div>
+                  <div class="step-content">
+                    <h4 style="font-size: 1.15rem;">執行安裝並啟動</h4>
+                    <p style="font-size: 1rem;">點開下載檔完成安裝，在桌面找到 <strong>Antigravity</strong> 藍色圖示點擊開啟。</p>
+                  </div>
+                </div>
+                <div class="step-item" style="padding: 12px 16px;">
+                  <div class="step-num" style="width: 32px; height: 32px; font-size: 1rem;">3</div>
+                  <div class="step-content">
+                    <h4 style="font-size: 1.15rem;">Google 帳號一鍵登入</h4>
+                    <p style="font-size: 1rem;">點擊 Sign In，使用平常慣用的 Google 帳號授權登入即可使用。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="prompt-box" style="margin-top: 0;">
+                <div class="prompt-header">
+                  <div class="prompt-badge"><span>🔗</span> 官方快速下載連結</div>
+                  <button class="btn-copy" onclick="copyPrompt('prompt-download-url', this)">
+                    <span>📋</span> 複製網址
+                  </button>
+                </div>
+                <pre class="prompt-content" id="prompt-download-url" style="font-size: 1.3rem; text-align: center; color: var(--accent-teal-light); padding: 16px;">https://antigravity.google/</pre>
+              </div>
+
+              <div class="card" style="border-top: 4px solid var(--accent-amber);">
+                <div class="card-title">💡 現場環境就緒提示</div>
+                <ul style="padding-left: 20px; color: var(--text-muted); font-size: 1.1rem; line-height: 1.7; margin-top: 8px;">
+                  <li><strong>舊朋友：</strong>若上次已安裝過，直接在桌面搜尋「Antigravity」開啟並登入。</li>
+                  <li><strong>新朋友：</strong>現在開始點擊下載，讓軟體在背景安裝，我們一邊往下了解遊戲積木！</li>
+                  <li><strong>遇到狀況：</strong>若下載過慢或安裝卡住，請舉手，助教隨時協助！</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 07: 觀念升級：個人網站 vs 動態邏輯小程式
+           ========================================== -->
+      <section class="slide" data-stage="第一階段：啟發與橋接 (00~20m)" data-title="從個人網站到動態邏輯">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 1: CONCEPT UPGRADE</span>
+          <h2 class="slide-title">📈 觀念大升級：從「個人網站」到「動態邏輯」</h2>
+          <p class="slide-subtitle">大家在上次架設個人網站的分享中學會了網頁部署，今天我們更進一步讓網頁「活起來」！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="border-top: 4px solid var(--text-dim);">
+              <div class="card-title"><span class="icon">🌐</span> 上次成果：架設個人專屬網站（靜態展示）</div>
+              <p class="card-desc" style="font-size: 1.15rem;">
+                上次分享中大家親手完成的專屬網站：
+              </p>
+              <ul style="margin-top: 14px; padding-left: 24px; color: var(--text-muted); font-size: 1.12rem; line-height: 1.8;">
+                <li>內容是精美的靜態展示（個人品牌、自我介紹、照片、社群連結）。</li>
+                <li>點擊按鈕通常是跳轉到外部連結（如 LINE、FB 等）。</li>
+                <li>以「呈現資訊」為主，網頁不需要記憶使用者的即時操作狀態。</li>
+              </ul>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--accent-teal-light);">
+              <div class="card-title" style="color: var(--accent-teal-light);"><span class="icon">🕹️</span> 今日挑戰：動態互動小程式</div>
+              <p class="card-desc" style="font-size: 1.15rem;">
+                就像一台<strong>能思考、有反應的掌上型電玩</strong>：
+              </p>
+              <ul style="margin-top: 14px; padding-left: 24px; color: var(--text-main); font-size: 1.12rem; line-height: 1.8;">
+                <li><strong>有狀態（State）：</strong>卡片現在是蓋著還是打開？</li>
+                <li><strong>有邏輯（Logic）：</strong>剛剛翻的第一張跟這張一樣嗎？</li>
+                <li><strong>有計數（Counter）：</strong>玩了幾步？是否全部通關了？</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="margin-top: 10px;">
+            ✨ <strong>好消息：</strong>複雜的「狀態與邏輯」我們一句程式碼都不用寫，全權委託 <strong>Antigravity AI Agent</strong> 來幫我們建構！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 08: 認識你的工程師 Antigravity
+           ========================================== -->
+      <section class="slide" data-stage="第一階段：啟發與橋接 (00~20m)" data-title="認識 Antigravity Agent">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 1: YOUR AI AGENT</span>
+          <h2 class="slide-title">🤖 認識您的專屬工程師：Antigravity Agent</h2>
+          <p class="slide-subtitle">不只會聊天，它能直接幫您寫出完整的遊戲網頁檔案，聽從指令持續修改！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card">
+              <div class="card-title"><span class="icon">👂</span> 1. 傾聽需求</div>
+              <p class="card-desc">讀懂您的日常口語指令，自動分析遊戲規格、卡片數量、按鈕位置與顏色偏好。</p>
+            </div>
+            <div class="card">
+              <div class="card-title"><span class="icon">⚡</span> 2. 自動編寫程式</div>
+              <p class="card-desc">幾秒鐘內產生 HTML（結構）、CSS（美觀外表）與 JavaScript（互動邏輯）檔案。</p>
+            </div>
+            <div class="card">
+              <div class="card-title"><span class="icon">🔄</span> 3. 聽話持續修改</div>
+              <p class="card-desc">用 Chrome 打開試玩後，若有想微調的地方，只要再打一句中文，它立刻幫您修改程式碼！</p>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="margin-top: 15px;">
+            💡 <strong>協作心法：</strong>您只要負責把 Antigravity 當成私人助理，把任務交代清楚，接下來它就會全心全意為您幹活！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 09: 拆解記憶翻牌遊戲的「四大積木」
+           ========================================== -->
+      <section class="slide" data-stage="第一階段：啟發與橋接 (00~20m)" data-title="拆解遊戲四大積木">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 1: ARCHITECTURE</span>
+          <h2 class="slide-title">🧩 遊戲設計思維：拆解翻牌遊戲的「四大積木」</h2>
+          <p class="slide-subtitle">身為產品經理與總導演，我們從「玩家體驗」出發規劃遊戲結構</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-4">
+            <div class="card">
+              <div style="font-size: 2rem; margin-bottom: 8px;">1️⃣ 🎴</div>
+              <div class="card-title" style="font-size: 1.2rem;">盤面格局</div>
+              <p class="card-desc">舒適直覺的網格排版，卡片數量適中、間距寬鬆，最適合手機直式螢幕觸控操作。</p>
+            </div>
+            <div class="card">
+              <div style="font-size: 2rem; margin-bottom: 8px;">2️⃣ 🔄</div>
+              <div class="card-title" style="font-size: 1.2rem;">雙面動效</div>
+              <p class="card-desc">卡片具備「神秘牌背」與「揭曉正面」，點擊時翻轉流暢、圖示清晰不眼花。</p>
+            </div>
+            <div class="card">
+              <div style="font-size: 2rem; margin-bottom: 8px;">3️⃣ ⚖️</div>
+              <div class="card-title" style="font-size: 1.2rem;">記憶判定</div>
+              <p class="card-desc">考驗瞬間記憶！相同則維持翻開；若不同，給予短暫停留時間記憶後再自動蓋上。</p>
+            </div>
+            <div class="card">
+              <div style="font-size: 2rem; margin-bottom: 8px;">4️⃣ 🏆</div>
+              <div class="card-title" style="font-size: 1.2rem;">目標激勵</div>
+              <p class="card-desc">即時步數激勵玩家挑戰更少次數，具備重玩鈕，通關時跳出溫馨成就彈窗！</p>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="margin-top: 10px;">
+            💡 <strong>導演的轉譯魔法：</strong>遊戲體驗想清楚了！下一頁，看看我們如何把這四大積木直接變成「四行指令」交給助理！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 10: 【核心 Prompt 範本】
+           ========================================== -->
+      <section class="slide" data-stage="第二階段：人機協作實戰 (20~55m)" data-title="【核心】黃金 Prompt 範本">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 2: GOLDEN PROMPT</span>
+          <h2 class="slide-title">📋 課堂專用核心提示詞（Prompt）範本</h2>
+          <p class="slide-subtitle">你看！剛才的四大積木，一對一直接化為四條精準指令，點擊右上角一鍵複製！</p>
+        </div>
+        <div class="slide-body">
+          <div class="prompt-box">
+            <div class="prompt-header">
+              <div class="prompt-badge">
+                <span>🎯</span> 核心指令卡片 ｜ 填空式黃金範本
+              </div>
+              <button class="btn-copy" onclick="copyPrompt('prompt-core', this)">
+                <span>📋</span> 複製提示詞
+              </button>
+            </div>
+            <pre class="prompt-content" id="prompt-core">請幫我製作一個單頁式（HTML + CSS + JavaScript 整合）的『記憶翻牌益智遊戲』，規格如下：
+1. 盤面配置：採用 4 行 3 列，共 12 張牌（包含 6 對相同的圖示）。
+2. 介面視覺：字體與按鈕務必清晰偏大、邊角圓潤、配色溫暖不刺眼，完美適配手機與平板觸控。
+3. 翻牌規則：點擊卡片翻開，若兩張相同則維持正面翻開；若不同，則在 1 秒後自動翻轉蓋回。
+4. 操作與計分：上方顯示『翻牌次數：0』及醒目的『重新開始』按鈕；當全部配對成功時，跳出溫馨的慶祝訊息（如：『恭喜過關！您的記憶力超棒！』）。</pre>
+          </div>
+          <div class="callout callout-amber" style="margin-top: 10px;">
+            💡 <strong>新手操作三步口訣：</strong>點擊複製 → 回到 Antigravity → 按右鍵「貼上」 → 按下 Enter 送出！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 11: 將指令交給 Agent 與實時生成
+           ========================================== -->
+      <section class="slide" data-stage="第二階段：人機協作實戰 (20~55m)" data-title="把指令交給 Agent 實戰">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 2: GENERATION</span>
+          <h2 class="slide-title">⚡ 把指令交給 Agent：見證奇蹟的時刻</h2>
+          <p class="slide-subtitle">放輕鬆，喝口茶，欣賞 AI 如何為您一步步建構程式碼</p>
+        </div>
+        <div class="slide-body">
+          <div class="steps-list">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>建立並開啟專案資料夾</h4>
+                <p>在桌面新增一個資料夾（例如命名為 <code>memory-game</code>），在 Antigravity 點選「<strong>Open Folder（開啟資料夾）</strong>」載入此目錄。</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>貼上提示詞並送出</h4>
+                <p>將剛剛複製的黃金 Prompt 貼入 Antigravity 對話框，確認無遺漏後按下送出（Enter）。</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>觀察 Agent 自動產出檔案</h4>
+                <p>畫面上 AI 開始規劃架構與排版，幾秒鐘內會在您的資料夾中自動寫好 <code>index.html</code> 完整程式碼。</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>用 Chrome 瀏覽器打開試玩</h4>
+                <p>打開剛剛的 <code>memory-game</code> 資料夾，對 <code>index.html</code> 按兩下用 Chrome 開啟，立刻在瀏覽器中暢玩！</p>
+              </div>
+            </div>
+          </div>
+          <div class="callout">
+            🔔 <strong>講師提醒：</strong>若生成過程停住或提示網路問題，請舉手，助教會在 10 秒內前來協助！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 12: 第二階段里程碑驗收
+           ========================================== -->
+      <section class="slide" data-stage="第二階段：人機協作實戰 (20~55m)" data-title="首版成果出爐 🎉">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 2: MILESTONE</span>
+          <h2 class="slide-title">🎉 第一版基礎遊戲出爐！驗收時間</h2>
+          <p class="slide-subtitle">切換到 Chrome 瀏覽器，親手翻開第一對牌驗收成果！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">✅ 基礎功能檢查清單</div>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px; font-size: 1.15rem;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" checked style="width: 20px; height: 20px;"> 畫面上是否有 12 張整齊排列的卡片？
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" checked style="width: 20px; height: 20px;"> 點擊卡片能順暢翻開看見圖案嗎？
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" checked style="width: 20px; height: 20px;"> 翻開兩張不同圖案，1 秒後會蓋回去嗎？
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" checked style="width: 20px; height: 20px;"> 上方的「翻牌次數」是否有隨著點擊跳動？
+                </label>
+              </div>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+              <div style="font-size: 3.5rem; margin-bottom: 12px;">🌟</div>
+              <h3 style="font-size: 1.6rem; color: var(--accent-amber); margin-bottom: 10px;">恭喜您！</h3>
+              <p style="color: var(--text-muted); font-size: 1.15rem; line-height: 1.6;">
+                您剛剛已經完成了人生第一個由 AI 代理人為您親手打造的動態網頁程式！<br>
+                接下來，我們要讓它變成「屬於您自己風格」的專屬作品！
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 13: 第三階段：個人化定制微調
+           ========================================== -->
+      <section class="slide" data-stage="第三階段：個人化定制微調 (55~85m)" data-title="個人化定制概念">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 3: CUSTOMIZATION</span>
+          <h2 class="slide-title">🎨 注入靈魂：告別制式，打造個人主題</h2>
+          <p class="slide-subtitle">科技因為人的生活經歷而有溫度，每個人都能擁有獨一無二的專屬版本！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card" style="border-top: 4px solid #ec4899;">
+              <div class="card-title">🌸 花卉植栽主題</div>
+              <p class="card-desc">喜愛蒔花弄草、綠意生活？換上櫻花、向日葵、玫瑰與淡雅鼠尾草綠，身心放鬆。</p>
+            </div>
+            <div class="card" style="border-top: 4px solid #f97316;">
+              <div class="card-title">🍎 寶島四季水果</div>
+              <p class="card-desc">親切熱情、老少咸宜！換上蘋果、香蕉、西瓜與溫暖活力橘黃色，大人小孩都喜愛。</p>
+            </div>
+            <div class="card" style="border-top: 4px solid #0284c7;">
+              <div class="card-title">✈️ 樂活環遊世界</div>
+              <p class="card-desc">熱愛出國旅行、打卡名勝？換上巴黎鐵塔、富士山、神殿與大氣天青藍，重溫美好記憶。</p>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="margin-top: 15px;">
+            👇 接下來請從後方三套主題材料包中，<strong>挑選一套最喜歡的</strong>，一鍵複製送給 AI 即可！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 14: 主題一：綠意生活花卉
+           ========================================== -->
+      <section class="slide" data-stage="第三階段：個人化定制微調 (55~85m)" data-title="主題材料包：花卉主題">
+        <div class="slide-header">
+          <span class="slide-tag">THEME PACK 1</span>
+          <h2 class="slide-title">🌸 主題材料包 1：綠意與生活花卉</h2>
+          <p class="slide-subtitle">沉靜放鬆、優雅舒心，適合喜愛大自然與園藝植栽的學員</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">🌿 配套規格說明</div>
+              <ul style="padding-left: 20px; font-size: 1.15rem; line-height: 1.8; color: var(--text-muted); margin-top: 10px;">
+                <li><strong>卡片圖案：</strong>櫻花 🌸、向日葵 🌻、玫瑰 🌹、鬱金香 🌷、綠葉 🌿、仙人掌 🌵</li>
+                <li><strong>視覺色調：</strong>淡茶色、柔和鼠尾草綠（保護視力、不刺眼）</li>
+                <li><strong>過關金句：</strong>『生活如花綻放！您的記憶力如同春風拂面般清晰！』</li>
+              </ul>
+            </div>
+            <div class="prompt-box" style="margin-top: 0;">
+              <div class="prompt-header">
+                <div class="prompt-badge"><span>🌸</span> 花卉微調指令</div>
+                <button class="btn-copy" onclick="copyPrompt('prompt-theme-flower', this)">
+                  <span>📋</span> 複製指令
+                </button>
+              </div>
+              <pre class="prompt-content" id="prompt-theme-flower">請幫我將遊戲改為『綠意花卉』主題：
+1. 6 組配對圖案改為：櫻花🌸、向日葵🌻、玫瑰🌹、鬱金香🌷、綠葉🌿、仙人掌🌵。
+2. 背景與卡片牌背改為優雅舒適的『鼠尾草綠與淡茶色』，文字維持清晰大字。
+3. 過關祝賀詞改為：『生活如花綻放！您的記憶力如春風般清晰！』</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 15: 主題二：寶島四季水果
+           ========================================== -->
+      <section class="slide" data-stage="第三階段：個人化定制微調 (55~85m)" data-title="主題材料包：水果主題">
+        <div class="slide-header">
+          <span class="slide-tag">THEME PACK 2</span>
+          <h2 class="slide-title">🍎 主題材料包 2：寶島四季水果</h2>
+          <p class="slide-subtitle">活力陽光、親切易懂，無論大人小孩都超有共鳴，聚會同樂首選！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">🍉 配套規格說明</div>
+              <ul style="padding-left: 20px; font-size: 1.15rem; line-height: 1.8; color: var(--text-muted); margin-top: 10px;">
+                <li><strong>卡片圖案：</strong>蘋果 🍎、香蕉 🍌、西瓜 🍉、葡萄 🍇、草莓 🍓、鳳梨 🍍</li>
+                <li><strong>視覺色調：</strong>活力暖陽橙、溫馨米黃色</li>
+                <li><strong>過關金句：</strong>『太豐收了！您的腦力比最甜的水果還要讚！』</li>
+              </ul>
+            </div>
+            <div class="prompt-box" style="margin-top: 0;">
+              <div class="prompt-header">
+                <div class="prompt-badge"><span>🍎</span> 水果微調指令</div>
+                <button class="btn-copy" onclick="copyPrompt('prompt-theme-fruit', this)">
+                  <span>📋</span> 複製指令
+                </button>
+              </div>
+              <pre class="prompt-content" id="prompt-theme-fruit">請幫我將遊戲改為『寶島四季水果』主題：
+1. 6 組配對圖案改為：蘋果🍎、香蕉🍌、西瓜🍉、葡萄🍇、草莓🍓、鳳梨🍍。
+2. 整體配色改為明亮溫暖的『陽光暖橙與米黃色』，按鈕圓角加大且更醒目。
+3. 過關祝賀詞改為：『太豐收了！您的腦力比最甜的水果還要讚！』</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 16: 主題三：樂活環遊世界
+           ========================================== -->
+      <section class="slide" data-stage="第三階段：個人化定制微調 (55~85m)" data-title="主題材料包：旅行主題">
+        <div class="slide-header">
+          <span class="slide-tag">THEME PACK 3</span>
+          <h2 class="slide-title">✈️ 主題材料包 3：樂活環遊世界</h2>
+          <p class="slide-subtitle">開闊大氣、追尋回憶，喚醒每次出國踏青的精彩足跡</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">🗼 配套規格說明</div>
+              <ul style="padding-left: 20px; font-size: 1.15rem; line-height: 1.8; color: var(--text-muted); margin-top: 10px;">
+                <li><strong>卡片圖案：</strong>巴黎鐵塔 🗼、自由女神 🗽、富士山 🗻、希臘神殿 🏛️、摩天輪 🎡、帆船 ⛵</li>
+                <li><strong>視覺色調：</strong>天青藍、沈穩深邃米白</li>
+                <li><strong>過關金句：</strong>『環遊世界達標！您的記憶力如同指南針一樣精準！』</li>
+              </ul>
+            </div>
+            <div class="prompt-box" style="margin-top: 0;">
+              <div class="prompt-header">
+                <div class="prompt-badge"><span>✈️</span> 環遊世界指令</div>
+                <button class="btn-copy" onclick="copyPrompt('prompt-theme-travel', this)">
+                  <span>📋</span> 複製指令
+                </button>
+              </div>
+              <pre class="prompt-content" id="prompt-theme-travel">請幫我將遊戲改為『樂活環遊世界』主題：
+1. 6 組配對圖案改為：巴黎鐵塔🗼、自由女神🗽、富士山🗻、希臘神殿🏛️、摩天輪🎡、帆船⛵。
+2. 配色改為開闊大氣的『天青藍與米白色』，卡片加大並加強陰影層次。
+3. 過關祝賀詞改為：『環遊世界達標！您的記憶力如同指南針一樣精準！』</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 17: 選修進階挑戰：彩花與激勵金句
+           ========================================== -->
+      <section class="slide" data-stage="第三階段：個人化定制微調 (55~85m)" data-title="選修進階：過關彩花特效">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 3: BONUS CHALLENGE</span>
+          <h2 class="slide-title">🎊 選修挑戰：加入過關彩花與專屬金句</h2>
+          <p class="slide-subtitle">讓遊戲的通關儀式感直接拉滿！學員最驚豔的華麗特效</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div>
+              <div class="card" style="margin-bottom: 16px;">
+                <div class="card-title">🎉 為什麼要加彩花特效？</div>
+                <p class="card-desc">
+                  當 12 張牌全部翻完配對成功時，螢幕漫天飄下繽紛彩帶與五彩紙花（Confetti），帶給玩家極大的視聽感官回饋與過關成就感！
+                </p>
+              </div>
+              <div class="callout">
+                ✨ 只要將右邊這段微調補充指令複製送出，Agent 就會自動在 JavaScript 中注入紙花效果程式庫！
+              </div>
+            </div>
+            <div class="prompt-box" style="margin-top: 0;">
+              <div class="prompt-header">
+                <div class="prompt-badge"><span>🎊</span> 紙花特效進階指令</div>
+                <button class="btn-copy" onclick="copyPrompt('prompt-bonus', this)">
+                  <span>📋</span> 複製指令
+                </button>
+              </div>
+              <pre class="prompt-content" id="prompt-bonus">請在目前遊戲的基礎上，幫我加入以下升級：
+1. 當全部配對成功時，螢幕上請噴灑出美麗熱鬧的『彩色紙花（Confetti）動畫效果』！
+2. 彈出的過關視窗加入個人簽名署名：『本遊戲由 [您的名字] 總指揮，AI Agent 協作完成！』
+3. 按鈕加上更輕快的點擊音效或縮放彈跳效果。</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 18: 第四階段：認識與註冊 GitHub
+           ========================================== -->
+      <section class="slide" data-stage="第四階段：發布與手機安裝 (85~105m)" data-title="認識與登入 GitHub">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 4: CLOUD DEPLOY</span>
+          <h2 class="slide-title">🐙 認識 GitHub：小程式的雲端家園與快速就緒</h2>
+          <p class="slide-subtitle">電腦裡的檔案只有自己看得到，放在 GitHub 雲端才能讓全世界連線暢玩！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="border-top: 4px solid #8b5cf6;">
+              <div class="card-title">🌐 什麼是 GitHub 與倉庫（Repository）？</div>
+              <ul style="padding-left: 20px; font-size: 1.15rem; line-height: 1.8; color: var(--text-muted); margin-top: 14px;">
+                <li><strong>GitHub 是什麼？</strong> 全球最大的程式碼雲端硬碟，負責替我們免費保管網頁檔案。</li>
+                <li><strong>什麼是倉庫（Repository / Repo）？</strong> 就像雲端硬碟裡的一個「專案資料夾」，等等我們會把 <code>index.html</code> 放進專屬倉庫。</li>
+                <li><strong>什麼是 GitHub Pages？</strong> GitHub 提供的免費伺服器服務，30 秒內把 HTML 轉成正式公開網址！</li>
+              </ul>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="card" style="border-top: 4px solid var(--accent-teal-light);">
+                <div class="card-title">🔑 快速註冊與登入指引</div>
+                <div style="margin-top: 10px; font-size: 1.12rem; line-height: 1.8; color: var(--text-main);">
+                  <div>• <strong>新朋友（初次使用）：</strong>進入官網點選右上角「<strong>Sign up</strong>」，輸入 Email、密碼與使用者名稱完成免費註冊。</div>
+                  <div style="margin-top: 6px;">• <strong>舊朋友（上次已註冊）：</strong>直接點選右上角「<strong>Sign in</strong>」登入帳號。</div>
+                </div>
+              </div>
+
+              <div class="prompt-box" style="margin-top: 0;">
+                <div class="prompt-header">
+                  <div class="prompt-badge"><span>🔗</span> GitHub 官網連結</div>
+                  <button class="btn-copy" onclick="copyPrompt('prompt-github-url', this)">
+                    <span>📋</span> 複製網址
+                  </button>
+                </div>
+                <pre class="prompt-content" id="prompt-github-url" style="font-size: 1.3rem; text-align: center; color: var(--accent-teal-light); padding: 14px;">https://github.com/</pre>
+              </div>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="margin-top: 15px;">
+            💡 <strong>就緒檢查：</strong>只要瀏覽器右上角出現個人頭像圖示，就代表您的雲端空間準備就緒！有任何註冊疑問請隨時舉手。
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 19: 第四階段：發布到 GitHub Pages
+           ========================================== -->
+      <section class="slide" data-stage="第四階段：發布與手機安裝 (85~105m)" data-title="雲端發布三部曲">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 4: CLOUD DEPLOY</span>
+          <h2 class="slide-title">🌐 雲端發布三部曲：交給 Agent 自動推送上雲端</h2>
+          <p class="slide-subtitle">不用手動敲複雜的黑底白字 Git 指令，複製專屬提示詞，讓 AI 幫您一鍵發布！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="steps-list" style="gap: 12px;">
+              <div class="step-item" style="padding: 12px 16px;">
+                <div class="step-num" style="width: 32px; height: 32px; font-size: 1rem;">1</div>
+                <div class="step-content">
+                  <h4 style="font-size: 1.15rem;">在 GitHub 建立新倉庫</h4>
+                  <p style="font-size: 0.98rem;">登入 GitHub 點擊右上角「<strong>+</strong>」→「<strong>New repository</strong>」，名稱填入 <code>memory-game</code>，建立後複製倉庫網址（如 <code>https://github.com/帳號/memory-game.git</code>）。</p>
+                </div>
+              </div>
+              <div class="step-item" style="padding: 12px 16px;">
+                <div class="step-num" style="width: 32px; height: 32px; font-size: 1rem;">2</div>
+                <div class="step-content">
+                  <h4 style="font-size: 1.15rem;">貼上右側發布指令給 Agent</h4>
+                  <p style="font-size: 0.98rem;">複製右邊提示詞，貼入 Antigravity 對話框，讓 AI 自動在背景執行 Git 提交與推送（Push）。</p>
+                </div>
+              </div>
+              <div class="step-item" style="padding: 12px 16px;">
+                <div class="step-num" style="width: 32px; height: 32px; font-size: 1rem;">3</div>
+                <div class="step-content">
+                  <h4 style="font-size: 1.15rem;">開啟 GitHub Pages 服務</h4>
+                  <p style="font-size: 0.98rem;">前往倉庫 <strong>Settings</strong> → <strong>Pages</strong> → Branch 選擇 <strong>main</strong> 按 <strong>Save</strong>，30 秒獲得專屬公開網址！</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="prompt-box" style="margin-top: 0;">
+              <div class="prompt-header">
+                <div class="prompt-badge"><span>🚀</span> 一鍵發布提示詞</div>
+                <button class="btn-copy" onclick="copyPrompt('prompt-deploy', this)">
+                  <span>📋</span> 複製發布指令
+                </button>
+              </div>
+              <pre class="prompt-content" id="prompt-deploy" style="font-size: 1.05rem; line-height: 1.6;">請幫我將目前的記憶翻牌專案推送到我的 GitHub 倉庫並開啟 Pages：
+1. 請檢查並初始化 Git，將目前的 index.html 進行 Commit 提交。
+2. 將主分支命名為 main，並連線至我的遠端倉庫：
+   [請在此貼上您的 GitHub 倉庫網址]
+3. 執行推送（git push）上傳檔案。
+4. 推送成功後，請幫我開啟 GitHub Pages（若有 gh 指令請自動啟用，若無請提供 Pages 設定頁面的直達網址與點選步驟），並計算出我的專屬遊戲公開網址！</pre>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="margin-top: 12px;">
+            💡 <strong>使用訣竅：</strong>點擊右上角複製指令，貼到 Antigravity 後，只要把中括號替換成您剛建立的 GitHub 倉庫網址送出即可！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 20: 手機安裝與加入主畫面
+           ========================================== -->
+      <section class="slide" data-stage="第四階段：發布與手機安裝 (85~105m)" data-title="把遊戲裝進手機主畫面">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 4: MOBILE APP</span>
+          <h2 class="slide-title">📱 把遊戲裝進手機主畫面（專屬 App）</h2>
+          <p class="slide-subtitle">不用到 App Store 下載！現場掃描 QR Code，一鍵變成手機桌面圖示</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="border-top: 4px solid #38bdf8;">
+              <div class="card-title">🍏 蘋果 iPhone (Safari 瀏覽器)</div>
+              <div class="steps-list" style="margin-top: 12px; gap: 10px;">
+                <div style="font-size: 1.15rem; color: var(--text-main);">
+                  <strong>第一步：</strong>開啟 Safari 瀏覽器打開遊戲網址。<br>
+                  <strong>第二步：</strong>點擊螢幕下方正中間的「<strong>分享按鈕（方形箭頭向上 ⬆️）</strong>」。<br>
+                  <strong>第三步：</strong>選單往下滑，點選「<strong>加入主畫面（Add to Home Screen）➕</strong>」。<br>
+                  <strong>第四步：</strong>點選右上角「新增」，桌面立刻出現專屬小圖示！
+                </div>
+              </div>
+            </div>
+            <div class="card" style="border-top: 4px solid #10b981;">
+              <div class="card-title">🤖 安卓 Android (Chrome 瀏覽器)</div>
+              <div class="steps-list" style="margin-top: 12px; gap: 10px;">
+                <div style="font-size: 1.15rem; color: var(--text-main);">
+                  <strong>第一步：</strong>用 Chrome 瀏覽器打開遊戲網址。<br>
+                  <strong>第二步：</strong>點擊螢幕右上角的「<strong>三個直排小圓點選單 ⋮</strong>」。<br>
+                  <strong>第三步：</strong>點選「<strong>加到主畫面</strong>」或「<strong>安裝應用程式</strong>」。<br>
+                  <strong>第四步：</strong>確認新增，手機桌布上立刻擁有一款自製 App！
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="callout callout-amber" style="text-align: center; font-size: 1.25rem; font-weight: 700;">
+            點擊手機桌面的圖示，遊戲會全螢幕啟動，完全就像市面上賣的益智遊戲一樣流暢！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 21: 第五階段：鄰座 PK 賽
+           ========================================== -->
+      <section class="slide" data-stage="第五階段：歡樂互玩與總結 (105~120m)" data-title="鄰座比拚與互動互玩">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 5: INTERACTION</span>
+          <h2 class="slide-title">🤝 鄰座交換手機：誰是記憶力大師？</h2>
+          <p class="slide-subtitle">交換作品試玩，欣賞彼此的創意，現場比拚最少翻牌步數！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">🎲 課堂互玩小規則</div>
+              <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px; font-size: 1.15rem; color: var(--text-main);">
+                <div>1. 請轉身與您的<strong>左邊或右邊鄰座學員</strong>交換手機。</div>
+                <div>2. 打開對方的作品，欣賞他挑選的專屬主題與色調風格。</div>
+                <div>3. 開始挑戰！看看通關時誰的<strong>「翻牌次數」</strong>更低！</div>
+                <div>4. 遊戲結束後，給對方一個熱情的掌聲與回饋！👏</div>
+              </div>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+              <div style="font-size: 3.8rem; margin-bottom: 10px;">🏆</div>
+              <h3 style="font-size: 1.5rem; color: var(--accent-teal-light); margin-bottom: 8px;">記憶力排行榜挑戰</h3>
+              <p style="font-size: 1.12rem; color: var(--text-muted); line-height: 1.6;">
+                完美紀錄：12 步通關（過目不忘！）<br>
+                高手紀錄：14～18 步（記憶超群！）<br>
+                正常水準：20～26 步（樂活健康，越玩越靈活！）
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 22: 家庭 LINE 跨世代互動新話題
+           ========================================== -->
+      <section class="slide" data-stage="第五階段：歡樂互玩與總結 (105~120m)" data-title="跨世代社群分享">
+        <div class="slide-header">
+          <span class="slide-tag">STAGE 5: GENERATION BRIDGE</span>
+          <h2 class="slide-title">💬 跨世代群組分享時間：點開連結免安裝，立刻玩！</h2>
+          <p class="slide-subtitle">把專屬網址傳到 LINE、IG 或群組，收穫親友與社群的熱烈挑戰！</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">📲 推薦社群與 LINE 轉發金句範本</div>
+              <div class="prompt-box" style="margin-top: 10px;">
+                <div class="prompt-header">
+                  <div class="prompt-badge"><span>💬</span> 分享推薦文字</div>
+                  <button class="btn-copy" onclick="copyPrompt('prompt-line', this)">
+                    <span>📋</span> 複製文字
+                  </button>
+                </div>
+                <pre class="prompt-content" id="prompt-line">嗨！這是我今天在 AI 工作坊自己指揮 Agent 寫出來的『專屬記憶翻牌益智遊戲』📱！
+免安裝任何 App，點開網址就能在手機上直接玩，看你們誰能用最少步數過關！👇
+[在此貼上您的專屬 GitHub 網址]</pre>
+              </div>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column; justify-content: center;">
+              <div class="card-title">❤️ 跨世代與社群同樂的真正魅力</div>
+              <ul style="padding-left: 20px; color: var(--text-muted); font-size: 1.15rem; line-height: 1.8; margin-top: 10px;">
+                <li><strong>點開即玩零門檻：</strong>免下載 App Store 軟體，親友在 LINE 或手機上一秒連線暢玩！</li>
+                <li><strong>跨世代交流神器：</strong>長輩展現數位創造力、青年展現科技敏銳度，彼此都有超酷新話題。</li>
+                <li><strong>群組破冰新焦點：</strong>發到家庭群、同學群或工作群，驚呼連連：「這真的是你親自指揮 AI 做的？太強了！」</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 23: 延伸思考：未來還能指揮 AI 做什麼？
+           ========================================== -->
+      <section class="slide" data-stage="第五階段：歡樂互玩與總結 (105~120m)" data-title="延伸學習：未來生活小工具">
+        <div class="slide-header">
+          <span class="slide-tag">WHAT'S NEXT</span>
+          <h2 class="slide-title">🌱 科技自立的種子：未來還能指揮 AI 做什麼？</h2>
+          <p class="slide-subtitle">翻牌遊戲只是起點！相同的口語指揮邏輯，能解決生活中的各種需求</p>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card" style="border-top: 4px solid var(--primary);">
+              <div class="card-title"><span class="icon">🥗</span> 私房健康食譜盒</div>
+              <p class="card-desc">用說話請 AI 做一個「今日私房菜轉盤」，收錄拿手好菜與防三高健康叮嚀，點一下自動跳出今日菜單與食材清單。</p>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--accent-teal-light);">
+              <div class="card-title"><span class="icon">🚶</span> 樂活散步打卡計數器</div>
+              <p class="card-desc">設計一個每天散步圈數與心情紀錄小工具，按一下加一圈，散步完還能跳出健康勵志語錄給自己加油！</p>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--accent-amber);">
+              <div class="card-title"><span class="icon">🎡</span> 家庭聚會幸運轉盤</div>
+              <p class="card-desc">過年過節聚會時的娛樂神器！誰來洗碗？誰來唱歌？誰拿紅包？點擊指針轉動，讓全家人笑聲不斷。</p>
+            </div>
+          </div>
+          <div class="callout" style="margin-top: 15px; font-size: 1.25rem;">
+            💡 <strong>記住這個心法：</strong>只要把規格想清楚（欄位、按鈕、做什麼動作），AI 隨時都是您忠實的軟體工程團隊！
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           SLIDE 24: 結語與大合照
+           ========================================== -->
+      <section class="slide" data-stage="第五階段：歡樂互玩與總結 (105~120m)" data-title="結業致詞與大合照">
+        <div class="slide-header">
+          <span class="slide-tag">CONGRATULATIONS</span>
+          <h2 class="slide-title">🎓 恭喜各位！您已是合格的 AI Agent 指揮官</h2>
+          <p class="slide-subtitle">科技因生活而精彩，年齡永遠不是探索新世界的障礙！</p>
+        </div>
+        <div class="slide-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 24px;">
+          <div style="max-width: 850px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-accent); border-radius: 20px; padding: 32px;">
+            <p style="font-size: 1.55rem; line-height: 1.7; color: #f8fafc; font-style: italic;">
+              「科技不是工程師的專利，而是每一位熱愛生活、擁有創意之人的畫筆與翅膀！<br>
+              今天跨世代齊聚一堂，好奇心與熱忱就是最棒的超能力！」
+            </p>
+            <div style="margin-top: 20px; font-size: 1.2rem; color: var(--accent-amber); font-weight: 700;">
+              —— 講師 Sunny Lee 敬上
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px;">
+            <div class="card" style="padding: 16px 28px; text-align: center;">
+              <div style="font-size: 2rem;">🙋‍♂️</div>
+              <div style="font-weight: 700; color: #fff;">Q&A 課後交流</div>
+            </div>
+            <div class="card" style="padding: 16px 28px; text-align: center;">
+              <div style="font-size: 2rem;">📸</div>
+              <div style="font-weight: 700; color: #fff;">拿起手機大合照</div>
+            </div>
+            <div class="card" style="padding: 16px 28px; text-align: center;">
+              <div style="font-size: 2rem;">⭐</div>
+              <div style="font-weight: 700; color: #fff;">滿意度問卷回饋</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- 底部導覽列 -->
+  <footer class="bottom-bar">
+    <div class="keyboard-hint">
+      <span>翻頁提示：</span>
+      <span class="kbd-key">←</span>
+      <span class="kbd-key">→</span>
+      <span class="kbd-key">Space</span>
+      <span style="margin-left: 8px;">目錄：</span>
+      <span class="kbd-key">M</span>
+      <span style="margin-left: 8px;">全螢幕：</span>
+      <span class="kbd-key">F</span>
+    </div>
+
+    <div class="nav-btn-group">
+      <button class="btn-nav" id="btnPrev" title="上一頁 (ArrowLeft)">
+        <span>◀</span> 上一頁
+      </button>
+
+      <div class="slide-counter">
+        <span class="counter-curr" id="currPage">01</span>
+        <span class="counter-total">/</span>
+        <span class="counter-total" id="totalPage">24</span>
+      </div>
+
+      <button class="btn-nav" id="btnNext" title="下一頁 (ArrowRight / Space)">
+        下一頁 <span>▶</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- 目錄抽屜 (TOC Overlay & Drawer) -->
+  <div class="drawer-overlay" id="drawerOverlay">
+    <div class="toc-drawer">
+      <div class="toc-header">
+        <h3>📑 簡報目錄大綱</h3>
+        <button class="btn-icon" id="btnCloseToc">✕ 關閉</button>
+      </div>
+      <div class="toc-body" id="tocList">
+        <!-- 由 JS 動態生成所有章節項目 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示詞複製浮動通知 (Toast) -->
+  <div class="toast-copy" id="copyToast">
+    <span>✅</span>
+    <span id="toastMsg">提示詞已成功複製到剪貼簿！可直接貼入 Antigravity</span>
+  </div>
+
+  <!-- ==========================================================================
+       9. 核心互動腳本 (JavaScript Engine)
+       ========================================================================== -->
+  <script>
+    // 取得所有投影片與 DOM 節點
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const totalSlides = slides.length;
+    let currentIndex = 0;
+
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const currPageSpan = document.getElementById('currPage');
+    const totalPageSpan = document.getElementById('totalPage');
+    const progressFill = document.getElementById('progressFill');
+    const stageBadge = document.getElementById('stageBadge');
+    const headerTitle = document.getElementById('headerTitle');
+
+    const btnToc = document.getElementById('btnToc');
+    const btnCloseToc = document.getElementById('btnCloseToc');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const tocList = document.getElementById('tocList');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const copyToast = document.getElementById('copyToast');
+
+    // 初始化頁碼
+    totalPageSpan.textContent = String(totalSlides).padStart(2, '0');
+
+    // 生成目錄清單
+    let currentStageName = '';
+    slides.forEach((slide, index) => {
+      const stage = slide.getAttribute('data-stage') || '章節';
+      const title = slide.getAttribute('data-title') || `第 ${index + 1} 頁`;
+
+      if (stage !== currentStageName) {
+        currentStageName = stage;
+        const divider = document.createElement('div');
+        divider.className = 'toc-stage-divider';
+        divider.textContent = stage;
+        tocList.appendChild(divider);
+      }
+
+      const item = document.createElement('div');
+      item.className = `toc-item ${index === 0 ? 'active' : ''}`;
+      item.innerHTML = `
+        <span class="toc-item-num">${String(index + 1).padStart(2, '0')}</span>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${title}</span>
+      `;
+      item.addEventListener('click', () => {
+        goToSlide(index);
+        closeToc();
+      });
+      tocList.appendChild(item);
+    });
+
+    // 切換至指定頁面
+    function goToSlide(index) {
+      if (index < 0 || index >= totalSlides) return;
+
+      slides[currentIndex].classList.remove('active');
+      currentIndex = index;
+      slides[currentIndex].classList.add('active');
+
+      // 更新頁碼、進度條、階段與標題
+      const pageStr = String(currentIndex + 1).padStart(2, '0');
+      currPageSpan.textContent = pageStr;
+      
+      const progressPercent = ((currentIndex + 1) / totalSlides) * 100;
+      progressFill.style.width = `${progressPercent}%`;
+
+      const stage = slides[currentIndex].getAttribute('data-stage') || '課程導聆';
+      const title = slides[currentIndex].getAttribute('data-title') || '';
+      stageBadge.textContent = stage;
+      headerTitle.textContent = title ? `AI Agent 指揮官 ｜ ${title}` : 'AI Agent 指揮官：打造專屬『腦力翻牌』益智遊戲';
+
+      // 按鈕狀態控制
+      btnPrev.disabled = currentIndex === 0;
+      btnNext.disabled = currentIndex === totalSlides - 1;
+
+      // 更新目錄中作用中項目的醒目狀態
+      const tocItems = tocList.querySelectorAll('.toc-item');
+      tocItems.forEach((item, idx) => {
+        item.classList.toggle('active', idx === currentIndex);
+      });
+    }
+
+    function nextSlide() {
+      if (currentIndex < totalSlides - 1) goToSlide(currentIndex + 1);
+    }
+
+    function prevSlide() {
+      if (currentIndex > 0) goToSlide(currentIndex - 1);
+    }
+
+    btnNext.addEventListener('click', nextSlide);
+    btnPrev.addEventListener('click', prevSlide);
+
+    // 鍵盤快速鍵支援
+    window.addEventListener('keydown', (e) => {
+      // 避免在輸入框操作時觸發
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'PageDown':
+        case ' ':
+          e.preventDefault();
+          nextSlide();
+          break;
+        case 'ArrowLeft':
+        case 'PageUp':
+          e.preventDefault();
+          prevSlide();
+          break;
+        case 'Home':
+          e.preventDefault();
+          goToSlide(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          goToSlide(totalSlides - 1);
+          break;
+        case 'm':
+        case 'M':
+          toggleToc();
+          break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
+          break;
+        case 'Escape':
+          closeToc();
+          break;
+      }
+    });
+
+    // 目錄抽屜開關邏輯
+    function openToc() {
+      drawerOverlay.classList.add('open');
+    }
+    function closeToc() {
+      drawerOverlay.classList.remove('open');
+    }
+    function toggleToc() {
+      drawerOverlay.classList.toggle('open');
+    }
+
+    btnToc.addEventListener('click', openToc);
+    btnCloseToc.addEventListener('click', closeToc);
+    drawerOverlay.addEventListener('click', (e) => {
+      if (e.target === drawerOverlay) closeToc();
+    });
+
+    // 全螢幕切換
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn(`全螢幕請求失敗: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // ==========================================================================
+    // 10. 提示詞快速複製引擎 (Clipboard Fast Copy Engine)
+    // ==========================================================================
+    let toastTimeout = null;
+
+    window.copyPrompt = function(elementId, btnElement) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
+      const textToCopy = el.innerText || el.textContent;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          triggerCopySuccess(btnElement);
+        }).catch(err => {
+          fallbackCopyText(textToCopy, btnElement);
+        });
+      } else {
+        fallbackCopyText(textToCopy, btnElement);
+      }
+    };
+
+    function fallbackCopyText(text, btnElement) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        triggerCopySuccess(btnElement);
+      } catch (err) {
+        alert('複製失敗，請手動反白複製！');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function triggerCopySuccess(btnElement) {
+      if (btnElement) {
+        const originalHtml = btnElement.innerHTML;
+        btnElement.classList.add('copied');
+        btnElement.innerHTML = `<span>✓</span> 已複製！`;
+        setTimeout(() => {
+          btnElement.classList.remove('copied');
+          btnElement.innerHTML = originalHtml;
+        }, 2500);
+      }
+
+      // 顯示 Toast 通知
+      copyToast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        copyToast.classList.remove('show');
+      }, 2500);
+    }
+
+    // ==========================================================================
+    // 11. 內嵌翻牌小遊戲微演示 (Slide 05 Live Demo Logic)
+    // ==========================================================================
+    const miniGrid = document.getElementById('miniGameGrid');
+    const miniStepCount = document.getElementById('miniStepCount');
+    const miniWinMsg = document.getElementById('miniWinMsg');
+    const miniResetBtn = document.getElementById('miniResetBtn');
+
+    const demoIcons = ['🍎', '🍌', '🍓', '🍇'];
+    let miniCards = [];
+    let flippedCards = [];
+    let matchedCount = 0;
+    let steps = 0;
+    let isLocked = false;
+
+    function initMiniGame() {
+      miniGrid.innerHTML = '';
+      flippedCards = [];
+      matchedCount = 0;
+      steps = 0;
+      isLocked = false;
+      miniStepCount.textContent = '翻牌次數：0';
+      miniWinMsg.style.visibility = 'hidden';
+
+      // 8 張牌 (4對)
+      const deck = [...demoIcons, ...demoIcons].sort(() => Math.random() - 0.5);
+
+      deck.forEach((icon, i) => {
+        const card = document.createElement('div');
+        card.className = 'mini-card';
+        card.dataset.icon = icon;
+        card.innerHTML = `
+          <div class="mini-card-face mini-card-back">?</div>
+          <div class="mini-card-face mini-card-front">${icon}</div>
+        `;
+        card.addEventListener('click', () => handleCardClick(card));
+        miniGrid.appendChild(card);
+      });
+    }
+
+    function handleCardClick(card) {
+      if (isLocked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+      card.classList.add('flipped');
+      flippedCards.push(card);
+
+      if (flippedCards.length === 2) {
+        steps++;
+        miniStepCount.textContent = `翻牌次數：${steps}`;
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      const [c1, c2] = flippedCards;
+      if (c1.dataset.icon === c2.dataset.icon) {
+        c1.classList.add('matched');
+        c2.classList.add('matched');
+        flippedCards = [];
+        matchedCount += 2;
+        if (matchedCount === 8) {
+          miniWinMsg.style.visibility = 'visible';
+        }
+      } else {
+        isLocked = true;
+        setTimeout(() => {
+          c1.classList.remove('flipped');
+          c2.classList.remove('flipped');
+          flippedCards = [];
+          isLocked = false;
+        }, 900);
+      }
+    }
+
+    miniResetBtn.addEventListener('click', initMiniGame);
+    initMiniGame();
+
+    // 支援觸控滑動 (Touch Swipe for Mobile/Tablet)
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    window.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (touchEndX < touchStartX - 60) {
+        nextSlide();
+      } else if (touchEndX > touchStartX + 60) {
+        prevSlide();
+      }
+    }, { passive: true });
+
+    // 初始化第一頁
+    goToSlide(0);
+  </script>
+</body>
+</html>
